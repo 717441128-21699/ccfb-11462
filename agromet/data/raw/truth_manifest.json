@@ -1,0 +1,122 @@
+{
+  "year": 2023,
+  "seed": 20231115,
+  "months": [
+    1,
+    3
+  ],
+  "domain": {
+    "lat_min": 29.9,
+    "lat_max": 31.1,
+    "lon_min": 102.9,
+    "lon_max": 104.1
+  },
+  "sources": [
+    {
+      "id": "A",
+      "path": "D:\\codex\\runs\\11462\\workspace\\agromet\\data\\raw\\source_A_lambert.grib2",
+      "format": "grib2",
+      "projection": "Lambert conformal conic",
+      "resolution_m": 20000,
+      "grid_shape": [
+        7,
+        6
+      ],
+      "step_hours": 1
+    },
+    {
+      "id": "B",
+      "path": "D:\\codex\\runs\\11462\\workspace\\agromet\\data\\raw\\source_B_irregular.nc",
+      "format": "netcdf4",
+      "projection": "regular latlon",
+      "resolution_deg": 0.25,
+      "step_hours": 1,
+      "quirks": "中文变量名, K, kg m-2 s-1"
+    },
+    {
+      "id": "C",
+      "path": "D:\\codex\\runs\\11462\\workspace\\agromet\\data\\raw\\source_C_rotated.nc",
+      "format": "netcdf4",
+      "projection": "rotated pole 2D",
+      "resolution_deg": 0.2,
+      "step_hours": 1,
+      "quirks": "无units属性, 2D坐标, 自定义变量名"
+    }
+  ],
+  "counties": [
+    {
+      "code": "C01",
+      "name": "北区县",
+      "bbox": [
+        30.5,
+        31.1,
+        102.9,
+        103.5
+      ]
+    },
+    {
+      "code": "C02",
+      "name": "东北县",
+      "bbox": [
+        30.5,
+        31.1,
+        103.5,
+        104.1
+      ]
+    },
+    {
+      "code": "C03",
+      "name": "西南县",
+      "bbox": [
+        29.9,
+        30.5,
+        102.9,
+        103.5
+      ]
+    },
+    {
+      "code": "C04",
+      "name": "东南县",
+      "bbox": [
+        29.9,
+        30.5,
+        103.5,
+        104.1
+      ]
+    }
+  ],
+  "events": [
+    {
+      "hazard": "drought",
+      "event_id": "D1",
+      "start": "2023-03-01",
+      "end": "2023-03-25",
+      "bbox": [
+        29.9,
+        30.5,
+        102.9,
+        103.5
+      ],
+      "counties": [
+        "C03"
+      ],
+      "detail": "25个连续无雨日, 区域内日降水累计均 < 0.1mm"
+    },
+    {
+      "hazard": "frost",
+      "event_id": "F1",
+      "start": "2023-01-10",
+      "end": "2023-01-12",
+      "bbox": [
+        30.5,
+        31.1,
+        102.9,
+        103.5
+      ],
+      "counties": [
+        "C01"
+      ],
+      "detail": "连续3天日最低气温低于-2℃, 峰值约-5℃"
+    }
+  ]
+}

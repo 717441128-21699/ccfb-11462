@@ -1,0 +1,78 @@
+# 农业气象灾害指标配置
+# type:
+#   threshold_count : 满足条件的日数 (阈值计数)
+#   consecutive     : 连续满足条件的事件 (连续日数判据)
+#   aggregate       : 区间聚合量
+# condition 与 comparator/threshold 二选一; condition 支持 and/or 组合
+indicators:
+  - indicator_id: frost_days
+    name: 霜冻日数(最低温低于0度)
+    type: threshold_count
+    variable: tmin
+    comparator: "<"
+    threshold: 0.0
+    unit: days
+    description: 日最低气温低于0摄氏度的天数, 用于霜冻理赔判定
+
+  - indicator_id: severe_frost_days
+    name: 强霜冻日数(最低温低于-2度)
+    type: threshold_count
+    variable: tmin
+    comparator: "<"
+    threshold: -2.0
+    unit: days
+    description: 日最低气温低于-2摄氏度的天数
+
+  - indicator_id: frost_streak
+    name: 连续霜冻过程(不少于2天)
+    type: consecutive
+    variable: tmin
+    comparator: "<"
+    threshold: 0.0
+    min_duration: 2
+    unit: event
+    description: 连续2天及以上最低温低于0度的霜冻过程
+
+  - indicator_id: drought_dry_spell
+    name: 干旱连续无雨日(不少于15天)
+    type: consecutive
+    variable: precip
+    comparator: "<"
+    threshold: 0.1
+    min_duration: 15
+    unit: event
+    description: 日降水量低于0.1mm视为无雨, 连续15天以上判定为旱情过程
+
+  - indicator_id: drought_days
+    name: 无雨日数
+    type: threshold_count
+    variable: precip
+    comparator: "<"
+    threshold: 0.1
+    unit: days
+    description: 统计期内无雨日总数
+
+  - indicator_id: season_precip
+    name: 时段累计降水
+    type: aggregate
+    variable: precip
+    agg: sum
+    unit: mm
+    description: 指定时间范围内的降水总量, 辅助判断干旱强度
+
+  - indicator_id: high_temp_days
+    name: 高温日数(最高温不低于35度)
+    type: threshold_count
+    variable: tmax
+    comparator: ">="
+    threshold: 35.0
+    unit: days
+    description: 日最高气温达到35度以上的天数
+
+  - indicator_id: composite_cold_wet
+    name: 低温阴雨复合条件示例
+    type: threshold_count
+    variable: tmin
+    condition: "tmin < 2 and precip >= 0.1"
+    unit: days
+    description: 复合条件示例, 演示 and 组合表达式

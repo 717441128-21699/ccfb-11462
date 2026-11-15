@@ -1,0 +1,180 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "C01",
+        "name": "北区县",
+        "level": "county"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              102.9,
+              30.5
+            ],
+            [
+              103.5,
+              30.5
+            ],
+            [
+              103.5,
+              31.1
+            ],
+            [
+              102.9,
+              31.1
+            ],
+            [
+              102.9,
+              30.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "C02",
+        "name": "东北县",
+        "level": "county"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              103.5,
+              30.5
+            ],
+            [
+              104.1,
+              30.5
+            ],
+            [
+              104.1,
+              31.1
+            ],
+            [
+              103.5,
+              31.1
+            ],
+            [
+              103.5,
+              30.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "C03",
+        "name": "西南县",
+        "level": "county"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              102.9,
+              29.9
+            ],
+            [
+              103.5,
+              29.9
+            ],
+            [
+              103.5,
+              30.5
+            ],
+            [
+              102.9,
+              30.5
+            ],
+            [
+              102.9,
+              29.9
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "C04",
+        "name": "东南县",
+        "level": "county"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              103.5,
+              29.9
+            ],
+            [
+              104.1,
+              29.9
+            ],
+            [
+              104.1,
+              30.5
+            ],
+            [
+              103.5,
+              30.5
+            ],
+            [
+              103.5,
+              29.9
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "P01",
+        "name": "示范地块P01",
+        "level": "parcel"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              103.05,
+              30.75
+            ],
+            [
+              103.2,
+              30.75
+            ],
+            [
+              103.2,
+              30.9
+            ],
+            [
+              103.05,
+              30.9
+            ],
+            [
+              103.05,
+              30.75
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

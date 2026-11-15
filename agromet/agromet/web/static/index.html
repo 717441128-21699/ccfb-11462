@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>农险气象格点数据处理平台</title>
+<style>
+:root{
+  --bg:#f4f6f8; --panel:#ffffff; --ink:#1f2933; --muted:#6b7280;
+  --line:#dde3ea; --brand:#1d6f42; --brand2:#2f9e63; --accent:#b45309;
+  --danger:#b91c1c; --info:#1d4ed8; --radius:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#12161b;--panel:#1b222b;--ink:#e6ebf0;--muted:#93a1af;
+    --line:#2c3642;--brand:#34a86b;--brand2:#46c084;--accent:#f59e0b;
+    --danger:#f87171;--info:#60a5fa;}
+}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.55 "Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+  background:var(--bg);color:var(--ink)}
+header{background:var(--brand);color:#fff;padding:12px 20px;display:flex;
+  align-items:center;gap:14px;flex-wrap:wrap}
+header h1{font-size:18px;margin:0;font-weight:600}
+header .sub{opacity:.85;font-size:12px}
+nav{display:flex;gap:4px;background:var(--panel);padding:0 12px;
+  border-bottom:1px solid var(--line);overflow-x:auto}
+nav button{appearance:none;border:0;background:transparent;padding:13px 18px;
+  font-size:14px;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;
+  white-space:nowrap}
+nav button.active{color:var(--brand);border-bottom-color:var(--brand);font-weight:600}
+main{padding:18px 20px;max-width:1280px;margin:0 auto}
+.tab{display:none}.tab.active{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px;margin-bottom:16px}
+.card h2{margin:0 0 12px;font-size:15px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{background:color-mix(in srgb,var(--brand) 9%,transparent);font-weight:600}
+tr:nth-child(even) td{background:color-mix(in srgb,var(--ink) 3%,transparent)}
+button.act{background:var(--brand);color:#fff;border:0;border-radius:7px;
+  padding:8px 16px;cursor:pointer;font-size:13px}
+button.act:hover{background:var(--brand2)}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--ink);
+  border-radius:7px;padding:7px 12px;cursor:pointer}
+select,input{padding:7px 9px;border:1px solid var(--line);border-radius:7px;
+  background:var(--panel);color:var(--ink);font-size:13px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:12px;color:var(--muted)}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;
+  background:color-mix(in srgb,var(--brand) 14%,transparent);color:var(--brand)}
+.pill.warn{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.pill.err{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}
+.pill.info{background:color-mix(in srgb,var(--info) 14%,transparent);color:var(--info)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+canvas.map{width:100%;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.muted{color:var(--muted);font-size:12px}
+.scroll{max-height:420px;overflow:auto}
+svg.chart{width:100%;height:220px}
+.tag-good{color:var(--brand);font-weight:600}
+.tag-bad{color:var(--danger);font-weight:600}
+.audit{font-size:12px;color:var(--muted)}
+details{border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-bottom:8px}
+summary{cursor:pointer;font-weight:600}
+.kv{display:grid;grid-template-columns:130px 1fr;gap:4px 10px;font-size:13px;margin:6px 0}
+.kv b{color:var(--muted);font-weight:500}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;margin-top:6px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.sw{width:13px;height:13px;border-radius:3px;display:inline-block;border:1px solid var(--line)}
+#toast{position:fixed;right:18px;bottom:18px;background:var(--ink);color:var(--bg);
+  padding:10px 16px;border-radius:8px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
+#toast.show{opacity:.95}
+.wrap-code{font-family:ui-monospace,Consolas,monospace;font-size:12px;
+  white-space:pre-wrap;word-break:break-all;background:color-mix(in srgb,var(--ink) 5%,transparent);
+  border-radius:8px;padding:10px;max-height:340px;overflow:auto}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌾 农险气象格点数据处理平台</h1>
+  <span class="sub">NetCDF / GRIB · 多源统一插值 · 面积加权分区 · 灾害判定 · 格点溯源</span>
+</header>
+<nav id="nav">
+  <button data-tab="datasets" class="active">数据集</button>
+  <button data-tab="tasks">处理任务</button>
+  <button data-tab="zones">区县统计</button>
+  <button data-tab="hazards">灾害判定</button>
+  <button data-tab="claims">理赔查询</button>
+</nav>
+<main>
+
+<!-- ================= 数据集 ================= -->
+<section class="tab active" id="tab-datasets">
+  <div class="card">
+    <h2>已注册数据源 <button class="ghost" style="float:right" onclick="loadDatasets()">刷新</button></h2>
+    <div id="ds-table"></div>
+  </div>
+  <div class="card">
+    <h2>变量识别与单位换算审计</h2>
+    <div id="ds-audit" class="scroll"></div>
+  </div>
+</section>
+
+<!-- ================= 处理任务 ================= -->
+<section class="tab" id="tab-tasks">
+  <div class="card">
+    <h2>新建处理任务</h2>
+    <div class="row">
+      <div class="field"><label>数据集</label><select id="task-ds"></select></div>
+      <div class="field"><label>插值方法</label>
+        <select id="task-method">
+          <option value="nearest">nearest 最近邻</option>
+          <option value="linear" selected>linear 双线性</option>
+          <option value="cubic">cubic 双三次</option>
+          <option value="conservative">conservative 一阶守恒(面积)</option>
+        </select>
+      </div>
+      <button class="act" onclick="createTask()">开始处理</button>
+      <span class="muted">逐月分块, 内存上限 4 GiB</span>
+    </div>
+    <div id="task-progress"></div>
+  </div>
+  <div class="card">
+    <h2>任务历史</h2>
+    <div id="task-table"></div>
+  </div>
+</section>
+
+<!-- ================= 区县统计 ================= -->
+<section class="tab" id="tab-zones">
+  <div class="grid2">
+    <div class="card">
+      <h2>区县分布与日值着色</h2>
+      <div class="row">
+        <div class="field"><label>数据集</label><select id="zone-ds"></select></div>
+        <div class="field"><label>变量</label><select id="zone-var">
+          <option value="tmean">日均温 tmean</option>
+          <option value="tmin">日最低温 tmin</option>
+          <option value="tmax">日最高温 tmax</option>
+          <option value="precip">日降水 precip</option>
+        </select></div>
+        <div class="field"><label>日期</label><input type="date" id="zone-date"></div>
+      </div>
+      <canvas class="map" id="zone-map" width="640" height="560"></canvas>
+      <div class="legend" id="zone-legend"></div>
+    </div>
+    <div class="card">
+      <h2>区县时间序列</h2>
+      <div class="row">
+        <div class="field"><label>区县</label><select id="zone-pick"></select></div>
+        <button class="ghost" onclick="loadZoneSeries()">绘制</button>
+      </div>
+      <svg class="chart" id="zone-chart"></svg>
+      <div class="muted">温度为面积加权平均 (℃), 降水为区县内 mm·m² 总量</div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>分区统计明细表</h2>
+    <div id="zone-stats-table" class="scroll"></div>
+  </div>
+</section>
+
+<!-- ================= 灾害判定 ================= -->
+<section class="tab" id="tab-hazards">
+  <div class="card">
+    <h2>指标公式配置 (config/indicators.yaml)</h2>
+    <div id="ind-table"></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h2>命中网格</h2>
+      <div class="row">
+        <div class="field"><label>数据集</label><select id="hz-ds"></select></div>
+        <div class="field"><label>指标</label><select id="hz-ind"></select></div>
+        <div class="field"><label>日期</label><input type="date" id="hz-date"></div>
+        <button class="ghost" onclick="loadHazardGrid()">绘制</button>
+      </div>
+      <canvas class="map" id="hz-map" width="640" height="560"></canvas>
+      <div class="legend"><span><i class="sw" style="background:#d7263d"></i>命中</span>
+        <span><i class="sw" style="background:#cfe3d6"></i>未命中</span></div>
+    </div>
+    <div class="card">
+      <h2>判定事件</h2>
+      <div class="row">
+        <div class="field"><label>区县过滤</label><select id="hz-zone"><option value="">全部</option></select></div>
+        <button class="ghost" onclick="loadEvents()">查询</button>
+      </div>
+      <div id="hz-events" class="scroll"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 理赔查询 ================= -->
+<section class="tab" id="tab-claims">
+  <div class="card">
+    <h2>理赔点判定与格点溯源</h2>
+    <div class="row">
+      <div class="field"><label>经度</label><input id="cl-lon" value="103.12" style="width:110px"></div>
+      <div class="field"><label>纬度</label><input id="cl-lat" value="30.82" style="width:110px"></div>
+      <div class="field"><label>开始日期</label><input type="date" id="cl-start" value="2023-01-10"></div>
+      <div class="field"><label>结束日期</label><input type="date" id="cl-end" value="2023-01-12"></div>
+      <div class="field"><label>变量</label><select id="cl-var">
+        <option value="tmin">最低温 tmin</option><option value="precip">降水 precip</option>
+        <option value="tmax">最高温 tmax</option></select></div>
+      <button class="act" onclick="runTrace()">生成溯源报告</button>
+    </div>
+    <div class="muted">报告展示: 理赔点落入的目标格点 → 每个源数据集参与插值的格点坐标/权重 → 这些格点的原始值, 可严格线性还原目标值。</div>
+  </div>
+  <div id="claim-result"></div>
+  <div class="card">
+    <h2>历史报告</h2>
+    <div id="claim-list"></div>
+  </div>
+</section>
+</main>
+<div id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const api=async(u,o)=>{const r=await fetch(u,o);if(!r.ok){throw new Error((await r.json().catch(()=>({detail:r.status}))).detail)}return r.json()};
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function fmt(v,d=2){return v==null||Number.isNaN(v)?'—':Number(v).toFixed(d)}
+
+$('#nav').addEventListener('click',e=>{
+  if(e.target.tagName!=='BUTTON')return;
+  $$('#nav button').forEach(b=>b.classList.toggle('active',b===e.target));
+  $$('.tab').forEach(t=>t.classList.toggle('active',t.id==='tab-'+e.target.dataset.tab));
+});
+
+/* ================= 数据集 ================= */
+async function loadDatasets(){
+  const list=await api('/api/datasets');
+  $('#ds-table').innerHTML=`<table><tr><th>ID</th><th>格式</th><th>网格类型</th>
+    <th>维度</th><th>变量</th><th>时间范围</th><th>步长(h)</th></tr>
+    ${list.map(d=>`<tr><td>${esc(d.dataset_id)}</td>
+      <td><span class="pill ${d.format==='grib'?'info':''}">${d.format.toUpperCase()}</span></td>
+      <td>${d.grid_type}</td><td>${esc(JSON.stringify(d.dims))}</td>
+      <td>${d.variables.map(v=>`<span class="pill">${v}</span>`).join(' ')}</td>
+      <td class="muted">${esc(d.time_start?.slice(0,10))} ~ ${esc(d.time_end?.slice(0,10))}</td>
+      <td>${d.time_step_hours??'—'}</td></tr>`).join('')}</table>`;
+  $('#ds-audit').innerHTML=list.map(d=>`<details><summary>${esc(d.dataset_id)} — ${d.audits.length} 个变量识别记录</summary>
+    <table><tr><th>原始名</th><th>标准变量</th><th>原始单位</th><th>单位类型</th><th>换算后</th><th>备注</th></tr>
+    ${d.audits.map(a=>`<tr><td>${esc(a.original_name)}</td>
+      <td>${a.canonical_name?`<span class="pill">${a.canonical_name}</span>`:'<span class="pill err">丢弃</span>'}</td>
+      <td>${esc(a.original_unit)??'—'}</td><td>${esc(a.unit_kind)}</td>
+      <td>${esc(a.converted_unit)??'—'}</td><td class="audit">${esc(a.note)}</td></tr>`).join('')}
+    </table></details>`).join('');
+  // 同步填充各页签下的数据集下拉
+  for(const sel of ['#task-ds','#zone-ds','#hz-ds']){
+    $(sel).innerHTML=list.map(d=>`<option>${esc(d.dataset_id)}</option>`).join('');
+  }
+  window._datasets=list;
+  loadBoundariesForPickers();
+}
+
+/* ================= 任务 ================= */
+async function createTask(){
+  const dataset_id=$('#task-ds').value, method=$('#task-method').value;
+  $('#task-progress').innerHTML='<span class="pill info">处理中, 逐月分块…</span>';
+  try{
+    const t=await api('/api/tasks',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({dataset_id,method})});
+    const peak=Math.max(...t.memory_trace.map(m=>m.rss_mb));
+    $('#task-progress').innerHTML=t.status==='done'
+      ? `<span class="pill">完成</span> 分块 ${t.chunks} 个, 峰值内存 <b class="${peak<4096?'tag-good':'tag-bad'}">${peak} MB</b> / 4096 MB
+         <div class="muted">输出: ${t.outputs.map(esc).join('<br>')}</div>`
+      : `<span class="pill err">失败</span> ${esc(t.error)}`;
+    loadTasks();
+  }catch(e){$('#task-progress').innerHTML=`<span class="pill err">${esc(e.message)}</span>`}
+}
+async function loadTasks(){
+  const list=await api('/api/tasks');
+  $('#task-table').innerHTML=list.length?`<table><tr><th>任务</th><th>数据集</th><th>方法</th>
+    <th>状态</th><th>分块</th><th>峰值内存(MB)</th><th>创建时间</th><th>内存轨迹</th></tr>
+    ${list.map(t=>{const peak=Math.max(0,...t.memory_trace.map(m=>m.rss_mb));
+      return `<tr><td class="muted">${esc(t.task_id)}</td><td>${esc(t.dataset_id)}</td>
+      <td>${esc(t.method)}</td>
+      <td><span class="pill ${t.status==='done'?'':t.status==='failed'?'err':'warn'}">${t.status}</span></td>
+      <td>${t.chunks}</td><td class="${peak<4096?'tag-good':'tag-bad'}">${peak}</td>
+      <td class="muted">${esc(t.created_at)}</td>
+      <td><details><summary>查看</summary><div class="wrap-code">${esc(t.memory_trace.map(m=>`${m.stage}: ${m.rss_mb}MB`).join('\n'))}</div></details></td></tr>`}).join('')}</table>`
+    :'<div class="muted">暂无任务</div>';
+}
+
+/* ================= 地图 ================= */
+async function loadBoundariesForPickers(){
+  try{
+    const geo=await api('/api/zones/boundaries');
+    window._geo=geo;
+    const counties=geo.features.filter(f=>f.properties.level==='county');
+    const opts=counties.map(f=>`<option value="${f.properties.code}">${esc(f.properties.name)}</option>`).join('');
+    $('#zone-pick').innerHTML=opts;
+    $('#hz-zone').innerHTML='<option value="">全部</option>'+opts;
+    drawCounties($('#zone-map'),null);
+    drawCounties($('#hz-map'),null);
+  }catch(e){/* 边界尚未生成 */}
+}
+function domain(){
+  const f=window._geo.features;
+  let a=[999,999,-999,-999];
+  for(const ft of f){walk(ft.geometry,c=>{a[0]=Math.min(a[0],c[0]);a[1]=Math.min(a[1],c[1]);
+    a[2]=Math.max(a[2],c[0]);a[3]=Math.max(a[3],c[1])})}
+  return {minLon:a[0],minLat:a[1],maxLon:a[2],maxLat:a[3]};
+}
+function walk(g,cb){
+  if(g.type==='Polygon')g.coordinates.forEach(r=>r.forEach(cb));
+  else if(g.type==='MultiPolygon')g.coordinates.forEach(p=>p.forEach(r=>r.forEach(cb)));
+  else if(g.type==='Point')cb(g.coordinates);
+}
+function projector(canvas){
+  const d=domain(),W=canvas.width,H=canvas.height,pad=26;
+  const sx=(W-2*pad)/(d.maxLon-d.minLon), sy=(H-2*pad)/(d.maxLat-d.minLat);
+  return {
+    xy:(lon,lat)=>[pad+(lon-d.minLon)*sx,H-pad-(lat-d.minLat)*sy],
+    d, W,H
+  };
+}
+function drawCounties(canvas,fillBy){
+  const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);
+  const P=projector(canvas);
+  for(const ft of window._geo.features){
+    if(ft.properties.level!=='county')continue;
+    ctx.beginPath();
+    walk(ft.geometry,([lon,lat])=>{const[x,y]=P.xy(lon,lat);
+      ctx.lineTo(x,y)});
+    ctx.closePath();
+    ctx.fillStyle=fillBy?.[ft.properties.code]||'rgba(47,158,99,.12)';
+    ctx.fill();ctx.strokeStyle='#334155';ctx.lineWidth=1.2;ctx.stroke();
+    const c=centroid(ft.geometry),[cx,cy]=P.xy(c[0],c[1]);
+    ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--ink');
+    ctx.font='13px sans-serif';ctx.textAlign='center';
+    ctx.fillText(ft.properties.name,cx,cy);
+  }
+}
+function centroid(g){
+  let sx=0,sy=0,n=0;walk(g,c=>{sx+=c[0];sy+=c[1];n++});return [sx/n,sy/n];
+}
+function drawGrid(canvas,lat,lon,values,hitMode){
+  drawCounties(canvas,null);
+  const ctx=canvas.getContext('2d'),P=projector(canvas);
+  const dLat=lat[1]-lat[0],dLon=lon[1]-lon[0];
+  for(let j=0;j<lat.length;j++)for(let i=0;i<lon.length;i++){
+    const v=values[j][i];
+    const[x0,y0]=P.xy(lon[i]-dLon/2,lat[j]+dLat/2);
+    const[x1,y1]=P.xy(lon[i]+dLon/2,lat[j]-dLat/2);
+    ctx.fillStyle=hitMode?(v?'rgba(215,38,61,.55)':'rgba(207,227,214,.35)'):heat(v);
+    ctx.fillRect(x0,y0,x1-x0,y1-y0);
+  }
+  ctx.strokeStyle='rgba(100,116,139,.4)';ctx.lineWidth=.6;
+  for(let j=0;j<=lat.length;j++)for(let i=0;i<=lon.length;i++){
+    const[x,y]=P.xy(lon[0]+i*dLon-dLon/2,lat[0]+j*dLat-dLat/2);
+    ctx.strokeRect(x,y, (P.W-52)/lon.length, (P.H-52)/lat.length);
+  }
+}
+function heat(v){
+  if(v==null||Number.isNaN(v))return 'rgba(150,150,150,.15)';
+  // 蓝(冷) -> 白 -> 红(暖/多)
+  const t=Math.max(0,Math.min(1,(v+5)/40));
+  const r=Math.round(40+215*t),b=Math.round(200-170*t),g=Math.round(120-90*Math.abs(t-.5)*2);
+  return `rgba(${r},${g},${b},.5)`;
+}
+
+/* ================= 区县统计 ================= */
+async function loadZoneStats(){
+  const dataset=$('#zone-ds').value,variable=$('#zone-var').value,date=$('#zone-date').value;
+  if(!dataset)return;
+  const rows=await api(`/api/zones/stats?dataset=${encodeURIComponent(dataset)}&variable=${variable}&date=${date}`);
+  $('#zone-stats-table').innerHTML=rows.length?`<table><tr><th>日期</th><th>区县</th><th>变量</th><th>统计</th><th>值</th></tr>
+    ${rows.slice(0,500).map(r=>`<tr><td>${r.time}</td><td>${esc(r.zone_name)}</td><td>${r.variable}</td><td>${r.stat}</td><td>${fmt(r.value,2)}</td></tr>`).join('')}</table>`
+    :'<div class="muted">无数据</div>';
+  if(rows.length){
+    const by={};rows.forEach(r=>by[r.zone_id]=heat(r.value));
+    drawCounties($('#zone-map'),by);
+    const vals=rows.map(r=>r.value).filter(v=>v!=null);
+    $('#zone-legend').innerHTML=`<span>最小 ${fmt(Math.min(...vals))}</span>
+      <span><i class="sw" style="background:heat(0)"></i>低</span><span>最大 ${fmt(Math.max(...vals))}</span>`;
+  }
+}
+async function loadZoneSeries(){
+  const dataset=$('#zone-ds').value,zone_id=$('#zone-pick').value,variable=$('#zone-var').value;
+  const rows=await api(`/api/zones/timeseries?dataset=${encodeURIComponent(dataset)}&method=linear&zone_id=${zone_id}&variable=${variable}`);
+  drawLineChart($('#zone-chart'),rows);
+}
+function drawLineChart(svg,rows){
+  const W=svg.clientWidth||600,H=220,pad=38;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  if(!rows.length){svg.innerHTML='<text x="20" y="40" class="muted">无数据</text>';return}
+  const vals=rows.map(r=>r.value).filter(v=>v!=null);
+  const lo=Math.min(...vals),hi=Math.max(...vals),span=(hi-lo)||1;
+  const X=i=>pad+i*(W-2*pad)/(rows.length-1||1);
+  const Y=v=>H-pad-(v-lo)*(H-2*pad)/span;
+  const path=rows.map((r,i)=>`${i?'L':'M'}${X(i)},${r.value==null?'' :Y(r.value)}`).join(' ');
+  svg.innerHTML=`<line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" stroke="currentColor" opacity=.3/>
+    <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${H-pad}" stroke="currentColor" opacity=.3/>
+    <path d="${path}" fill="none" stroke="var(--brand2)" stroke-width="2"/>
+    <text x="${pad}" y="${pad-8}" fill="var(--muted)" font-size="11">max ${fmt(hi)}</text>
+    <text x="${pad}" y="${H-pad+16}" fill="var(--muted)" font-size="11">min ${fmt(lo)}</text>
+    <text x="${W-pad-90}" y="${H-pad+16}" fill="var(--muted)" font-size="11">${esc(rows[0].date)} ~ ${esc(rows.at(-1).date)}</text>`;
+}
+
+/* ================= 灾害 ================= */
+async function loadIndicators(){
+  const list=await api('/api/hazards/indicators');
+  $('#ind-table').innerHTML=`<table><tr><th>ID</th><th>名称</th><th>类型</th><th>变量</th><th>判据</th><th>最短持续</th><th>说明</th></tr>
+    ${list.map(s=>`<tr><td class="muted">${s.indicator_id}</td><td>${esc(s.name)}</td>
+      <td><span class="pill info">${s.type}</span></td><td>${s.variable}</td>
+      <td>${s.condition?esc(s.condition):`${s.comparator} ${s.threshold}`}</td>
+      <td>${s.min_duration>1?s.min_duration+' 天':'—'}</td><td class="muted">${esc(s.description)}</td></tr>`).join('')}</table>`;
+  $('#hz-ind').innerHTML=list.map(s=>`<option value="${s.indicator_id}">${esc(s.name)}</option>`).join('');
+}
+async function loadHazardGrid(){
+  const dataset=$('#hz-ds').value,indicator_id=$('#hz-ind').value,date=$('#hz-date').value;
+  const g=await api(`/api/hazards/grid?dataset=${encodeURIComponent(dataset)}&method=linear&indicator_id=${indicator_id}&date=${date}`);
+  drawGrid($('#hz-map'),g.lat,g.lon,g.values,true);
+}
+async function loadEvents(){
+  const dataset=$('#hz-ds').value,zone=$('#hz-zone').value,ind=$('#hz-ind').value;
+  const rows=await api(`/api/hazards/events?dataset=${encodeURIComponent(dataset)}&method=linear&zone_id=${zone}&indicator_id=${ind}`);
+  $('#hz-events').innerHTML=rows.length?`<table><tr><th>指标</th><th>区县</th><th>开始</th><th>结束</th><th>天数</th><th>峰值</th><th>均值</th></tr>
+    ${rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${r.zone_id}</td><td>${r.start_date}</td><td>${r.end_date}</td>
+      <td><b>${r.duration_days}</b></td><td>${fmt(r.peak_value,2)}</td><td>${fmt(r.mean_value,2)}</td></tr>`).join('')}</table>`
+    :'<div class="muted">无判定事件</div>';
+}
+
+/* ================= 理赔溯源 ================= */
+async function runTrace(){
+  const body={lon:+$('#cl-lon').value,lat:+$('#cl-lat').value,
+    start_date:$('#cl-start').value,end_date:$('#cl-end').value,variable:$('#cl-var').value};
+  $('#claim-result').innerHTML='<div class="card muted">计算中…</div>';
+  try{
+    const r=await api('/api/claims/trace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    window._trace=r;
+    let html=`<div class="card"><h2>溯源报告 — ${esc(r.parcel.name)} (${r.variable})</h2>
+      <div class="kv"><b>坐标</b><span>${body.lon}, ${body.lat}</span>
+      <b>日期</b><span>${r.dates.join(' ~ ')}</span>
+      <b>覆盖目标格点</b><span>${r.target_cells.length} 个</span></div></div>`;
+    for(const[sid,s]of Object.entries(r.sources)){
+      html+=`<div class="card"><details open><summary>数据源 ${esc(sid)} — 网格 ${s.grid_type}, 插值 ${s.method}, ${s.contributors.length} 条源格点贡献</summary>
+        <div class="muted">目标值 = Σ(源格点原始值 × 权重), 下列权重行归一, 可自行复算核对。</div>
+        <div class="scroll"><table><tr><th>目标格点(纬,经)</th><th>面积占比</th><th>源格点(行,列)</th>
+        <th>源坐标(纬,经)</th><th>权重</th><th>原始值序列</th></tr>
+        ${s.contributors.map(c=>`<tr><td>${fmt(c.target_cell.lat,2)}, ${fmt(c.target_cell.lon,2)}</td>
+          <td>${fmt(c.target_cell.area_fraction,3)}</td>
+          <td>${c.source.source_ji.join(',')}</td>
+          <td>${fmt(c.source.lat,3)}, ${fmt(c.source.lon,3)}</td>
+          <td><b>${fmt(c.source.weight,4)}</b></td>
+          <td><details><summary>${c.source.raw_values.length} 个时次</summary>
+            <div class="wrap-code">${c.source.raw_values.map(v=>`${v.time.slice(0,10)}: ${v.value==null?'NaN':fmt(v.value,3)}`).join('\n')}</div></details></td></tr>`).join('')}
+        </table></div></details></div>`;
+    }
+    $('#claim-result').innerHTML=html;
+    toast('溯源报告已生成并保存');
+    loadClaims();
+  }catch(e){$('#claim-result').innerHTML=`<div class="card pill err">${esc(e.message)}</div>`}
+}
+async function loadClaims(){
+  const list=await api('/api/claims');
+  $('#claim-list').innerHTML=list.length?`<table><tr><th>报告</th><th>生成时间</th><th></th></tr>
+    ${list.map(c=>`<tr><td class="muted">${esc(c.file)}</td><td class="muted">${esc(c.updated.slice(0,19).replace('T',' '))}</td>
+      <td><button class="ghost" onclick="openClaim('${c.file}')">查看</button></td></tr>`).join('')}</table>`
+    :'<div class="muted">暂无历史报告</div>';
+}
+async function openClaim(name){
+  const r=await api('/api/claims/'+encodeURIComponent(name));
+  window._trace=r;
+  let html=`<div class="card"><h2>${esc(name)}</h2><div class="wrap-code">${esc(JSON.stringify(r.sources?Object.keys(r.sources):r,null,2).slice(0,4000))}</div></div>`;
+  $('#claim-result').innerHTML=html;
+  window.scrollTo({top:$('#claim-result').offsetTop-80,behavior:'smooth'});
+}
+
+/* 初始化 */
+loadDatasets().then(()=>{loadTasks();loadIndicators().then(()=>{
+  const today='2023-03-10';
+  $('#zone-date').value=today;$('#hz-date').value='2023-01-11';
+  $('#zone-date').onchange=loadZoneStats;$('#zone-var').onchange=loadZoneStats;
+  $('#zone-ds').onchange=loadZoneStats;
+  loadZoneStats();loadEvents();
+})}).catch(e=>toast('初始化: '+e.message));
+loadClaims();
+</script>
+</body>
+</html>

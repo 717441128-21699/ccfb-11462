@@ -1,0 +1,14 @@
+# 全局处理配置
+target_grid:
+  lat_min: 29.85
+  lat_max: 31.15
+  lon_min: 102.85
+  lon_max: 104.15
+  resolution: 0.1
+
+# 4 GiB 内存上限 (字节)
+memory_limit: 4294967296
+# 每次处理的时间分块天数 (按月)
+time_chunk_days: 31
+dask_threads: 2
+spatial_chunk: 65536

@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+
+# 运行期数据与产物 (体积大, 由 synth/pipeline 重新生成)
+agromet/data/raw/*
+agromet/data/normalized/*
+agromet/data/daily/*
+agromet/data/stats/*
+agromet/data/weights/*
+agromet/data/lineage/*
+agromet/data/claims/*
+agromet/data/tasks/*
+agromet/data/*.out
+agromet/data/*.err
+!agromet/data/raw/.gitkeep
+!agromet/data/*/.gitkeep
+
+# GRIB cfgrib 索引
+*.idx
+*.idx.*

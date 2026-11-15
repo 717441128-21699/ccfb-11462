@@ -1,0 +1,1 @@
+INFO:     127.0.0.1:57978 - "GET /api/zones/timeseries?dataset=source_B_irregular&method=linear&zone_id=C03&variable=precip&stat=mean HTTP/1.1" 200 OK
